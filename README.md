@@ -1,4 +1,4 @@
-#Jigsaw_Puzzle_React
+# Jigsaw_Puzzle_React
 <h3>Introduction</h3>
 <h6>The puzzle allows one to choose an image from local and upload it to start the game.The user can then solve the puzzle by dragging images from the left matrix and dropping to the right matrix. On clicking the Apply button, one can check whether the solved solution is correct or not !</h6>
 <h6>Note: The solution works only for images greater than dimensions 400*400. Sample image present in the repository.</h6>

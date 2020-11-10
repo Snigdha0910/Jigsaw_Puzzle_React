@@ -110,10 +110,37 @@ function Game (props){
     setOpen(false);
   };
 
+  function renderPiece(piece, index, boardName) {
+    return (
+      <li
+        key={index}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => handleDrop(e, index, boardName)}>
+        {
+          piece && <img src={piece.img}
+          height='100px'
+          width='100px'
+          draggable 
+          onDragStart={(e) => handleDrag(e, piece.order)}/>
+        }
+      </li>
+    );
+  }
+  
+  function shufflePieces(pieces) {
+    const shuffled = [...pieces];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      let j = Math.floor(Math.random() * (i + 1));
+      let tmp = shuffled[i];
+      shuffled[i] = shuffled[j];
+      shuffled[j] = tmp;
+    }
+    return shuffled;
+  };
+
   return (
      <> 
     <div className='wrapperTextGame'>Drag and Drop items to the right matrix </div>  
-    
     <div className='wrapperGame'>
         <div className='puzzle'> 
             <Grid container spacing={5}>
@@ -149,36 +176,6 @@ function Game (props){
     </div>
     </>
   );
-
-function renderPiece(piece, index, boardName) {
-  return (
-    <li
-      key={index}
-      onDragOver={(e) => e.preventDefault()}
-      onDrop={(e) => handleDrop(e, index, boardName)}>
-      {
-        piece && <img src={piece.img}
-        height='100px'
-        width='100px'
-        draggable 
-        onDragStart={(e) => handleDrag(e, piece.order)}/>
-      }
- 
-    </li>
-  );
-
-}
-
-function shufflePieces(pieces) {
-  const shuffled = [...pieces];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    let j = Math.floor(Math.random() * (i + 1));
-    let tmp = shuffled[i];
-    shuffled[i] = shuffled[j];
-    shuffled[j] = tmp;
-  }
-  return shuffled;
-};
 }
 
 

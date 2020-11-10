@@ -1,9 +1,11 @@
 import './App.css';
 import React,{useState,useRef} from 'react';
 import Game from './Game';
-import puzzle from './puzzle.png';
+import puzzlePic from './puzzle.png';
 import { Button } from '@material-ui/core';
 import {makeStyles} from '@material-ui/core/styles';
+import Resizer from 'react-image-file-resizer';
+import Pieces from './Pieces';
 
 const useStyles = makeStyles((theme) => ({
     button:{
@@ -17,10 +19,11 @@ function App() {
   const classes = useStyles();
   const [state, setState]=useState({
     img:'',
-    page:0,
+    compressedImg:'',
+    page:0
   }); 
-  const [imagePiece,setPiece]=useState([]);
   const canvasRef = useRef(null);
+  const [puzzle,setPuzzle]=useState([]);
   
   const updatePage =()=>{
     let newState=JSON.parse(JSON.stringify(state));
@@ -29,53 +32,93 @@ function App() {
   }
 
   const playAgain= () =>{
-    setState(prevState =>({...prevState,img:'', page: 0}));
+    setState(prevState =>({...prevState,img:'',compressedImg:'', page: 0}));
   }
   
-  
-    const handleSubmit =(e)=>{
-      e.preventDefault();
-      let newState=JSON.parse(JSON.stringify(state));
-      newState.page = 1;
-      setState(newState);
+  const handleImageChange=(e)=> {
+    e.preventDefault();
+    let imgSrc=''
+    imgSrc=URL.createObjectURL(e.target.files[0]); 
+    if(!imgSrc){
+        return;
     }
-  
-    const handleImageChange=(e)=> {
-      e.preventDefault();
-      let imgSrc=''
-      imgSrc=URL.createObjectURL(e.target.files[0]); 
-      let newState=JSON.parse(JSON.stringify(state));
-      newState.img = imgSrc;
-      setState(newState);
-      createPic(imgSrc);
-    }
+    let newState=JSON.parse(JSON.stringify(state));
+    newState.img = imgSrc;
+    setState(newState);
+    createPic(imgSrc);
+  }
 
-    const createPic = (imgSrc)=>{
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
-      var rows=3;
-      var cols=3;
-      var img=new Image();
-      img.onload=start;
-      img.src=imgSrc
-      function start(){
-            img.width = 300;
-            img.height= 300;
-            var iw=canvas.width=img.width;
-            var ih=canvas.height=img.height; 
-            var pieceWidth=iw/cols;
-            var pieceHeight=ih/rows;
-      setPiece([]);
-      for(var y=0;y<rows;y++){
-        for(var x=0;x<cols;x++){
-          ctx.drawImage(img,x*pieceWidth, y*pieceHeight, pieceWidth, pieceHeight,0,0,300,300);
-          setPiece(old => [...old,canvas.toDataURL("image/png")]);
-          ctx.clearRect(0, 0, canvas.width, canvas.height)
+  const createPic = (imgSrc)=>{
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+      
+    var img=new Image();
+    img.onload=start;
+    img.src=imgSrc
+    function start(){
+      if(img.naturalHeight<300 && img.naturalWidth <300){
+          alert('Cant process image! Please select image greater than 300*300');
+          playAgain();  
+      }
+      else{
+       var ih = img.naturalHeight;
+       var iw = img.naturalWidth; 
+       var changedWidth;
+       var changedHeight;
+       if(ih !== iw){
+         if(ih>iw){
+          var diff = ih-iw;
+          changedWidth= diff/2;
+          changedHeight=0;
+          ih = iw;
+         }
+         else{
+          var diff = iw-ih;
+          changedHeight=diff/2;
+          changedWidth=0;
+          iw = ih;
+         }
+       }
+      else{
+         changedHeight=0;
+         changedWidth=0; 
+       }
+      canvas.width = iw;
+      canvas.height = ih;
+      ctx.drawImage(img,changedHeight,changedWidth,ih,iw,0,0,ih,iw);
+     
+      var imgVal= canvas.toDataURL("image/png");
+      let newState=JSON.parse(JSON.stringify(state));
+      newState.img=canvas.toDataURL("image/png");
+      setState(newState);
+      var imgBlob = b64toBlob(imgVal)
+
+      function b64toBlob(dataURI) {
+        var byteString = atob(dataURI.split(',')[1]);
+        var ab = new ArrayBuffer(byteString.length);
+        var ia = new Uint8Array(ab);
+        for (var i = 0; i < byteString.length; i++) {
+             ia[i] = byteString.charCodeAt(i);
+        }
+        return new Blob([ab], { type: 'image/jpeg' });
+     }
+
+      Resizer.imageFileResizer(imgBlob,300,300,'JPEG',100,0,uri => {
+                 setState(prevState =>({...prevState,compressedImg:uri}));
+            },'base64');  
+      setPuzzle([]);
+    }           
+  }
+}
+
+  const handlePieces=(pieces)=>{
+    setState(old=>({...old,page:1}));
+    if(!puzzle[0]){
+      for(let i=0;i<pieces.length;i++){
+        setPuzzle(old=>[...old,pieces[i]]);
         }
       }
-      
     }
-}
   
   return (
     <div>
@@ -83,7 +126,7 @@ function App() {
         <div>
           <span><i>The</i></span><br/><span style={{fontSize:'60px'}}>JIGSAW <br/>PUZZLE </span>
         </div>
-        <img src={puzzle} height='100px' width='100px'/>
+        <img src={puzzlePic} height='100px' width='100px'/>
           <br/>
         <i style={{fontSize:'13px'}}>The drag & drop puzzle game</i>
       </div>
@@ -95,25 +138,20 @@ function App() {
           <input type="file" style={{ display: "none" }} onChange={handleImageChange}/>
         </Button>
           <span style={{fontSize:'12px'}}><i>Choose file from here !</i></span><br/>
-          <span style={{fontSize:'10px'}}><b>*Please ensure minimum dimensions is 400*400 </b></span>
+          <span style={{fontSize:'10px'}}><b>*Please ensure minimum dimensions is 300*300 </b></span>
           <canvas ref={canvasRef} style={{display:'none'}}/>
-            {state.img ? 
-              <div style={{background:`url(${state.img}) 0% 0% no-repeat`, width: '300px',height: '300px'}}/>
+            {state.compressedImg ? 
+            <>
+              <img src={state.compressedImg}/>
+              <hr/>
+              <Pieces imgURI={state.compressedImg} handlePieces={handlePieces}/>
+              </> 
               :
               <div style={{backgroundColor:'white',height:'300px',width:'100%',clear:'both'}}></div>
             } 
-        <hr/>
-        <div style={{textAlign:'center'}}>
-            <Button classes={{root:classes.button}} 
-              variant="contained"  
-              disabled={state.img === ''} 
-              onClick={handleSubmit}>
-              Upload Image
-            </Button>
-        </div>
     </div>)
       :
-      <Game image={state.img} updatePage={updatePage} playAgain={playAgain} imagePieces={imagePiece} />
+        <Game image={state.compressedImg} updatePage={updatePage} playAgain={playAgain} imagePieces={puzzle} />
       }
       </div>
     </div>
